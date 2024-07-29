@@ -1,0 +1,42 @@
+//Summation according to groups
+
+    DATA(output) = VALUE data_tab(
+    FOR GROUPS group OF lt_ft_inv_line IN lt_ft_inv
+        GROUP BY ( matnr = lt_ft_inv_line-matnr vkbur = lt_ft_inv_line-vkbur )
+        (   matnr = group-matnr
+            vkbur = group-vkbur
+
+            fkimg = REDUCE #(
+                INIT subtotal = 0
+                FOR group_line IN GROUP group
+                NEXT subtotal  = subtotal  + group_line-fkimg
+            )
+        )
+).
+
+
+
+    LOOP AT lt_ft_inv1 ASSIGNING FIELD-SYMBOL(<wa>)
+         GROUP BY ( key1 = <wa>-matnr key2 = <wa>-fkdat+4(2) key3 = <wa>-vkbur count = GROUP SIZE )
+         ASCENDING
+         ASSIGNING FIELD-SYMBOL(<group_key>).
+
+      aggregate = VALUE #( min = 10000 ).
+      DATA(members) = VALUE itab1( ).
+      LOOP AT GROUP <group_key> ASSIGNING FIELD-SYMBOL(<member>).
+*        members = VALUE #( BASE members ( <member> ) ).
+        aggregate-sum = aggregate-sum + <member>-fkimg.
+*        aggregate-max = nmax( val1 = aggregate-max
+*                              val2 = <member>-fkimg ).
+*        aggregate-min = nmin( val1 = aggregate-min
+*                              val2 = <member>-num ).
+      ENDLOOP.
+*      aggregate-avg = aggregate-sum / <group_key>-count.
+
+      agg-matnr = <group_key>-key1.
+      agg-fkdat = <group_key>-key2.
+      agg-vkbur = <group_key>-key3.
+      agg-fkimg = aggregate-sum.
+
+      append agg to tb_ag.
+    ENDLOOP.
